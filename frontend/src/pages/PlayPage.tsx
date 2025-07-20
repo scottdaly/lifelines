@@ -6,6 +6,7 @@ import { ChoiceList } from '../components/ChoiceList';
 import { StatsPanel } from '../components/StatsPanel';
 import { RelationshipsPanel } from '../components/RelationshipsPanel';
 import { TimelineMini } from '../components/TimelineMini';
+import { CoreMemoriesPanel } from '../components/CoreMemoriesPanel';
 import { useGameStore } from '../store/gameStore';
 
 export function PlayPage() {
@@ -89,6 +90,7 @@ export function PlayPage() {
       `}>
         <StatsPanel />
         <RelationshipsPanel />
+        <CoreMemoriesPanel />
         
         <TimelineMini />
       </div>

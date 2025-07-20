@@ -215,9 +215,9 @@ export function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="max-w-md w-full space-y-8 p-8"
+            className="max-w-md w-full space-y-4 md:space-y-8 p-8"
           >
-            <div className="text-center space-y-2">
+            <div className="text-center">
               <pre className="text-xs text-term-gray opacity-50 leading-none select-none hidden">
 {`╔═══════════════════════════════════╗
 ║      _     ___ _____ _____ _     ║
@@ -232,8 +232,8 @@ export function HomePage() {
 ║          |___|_| \\_|_____|____/  ║
 ╚═══════════════════════════════════╝`}
               </pre>
-              <h1 className="text-4xl text-term-white font-logo">Lifelines</h1>
-              <p className="text-term-gray text-sm">A text-based life simulation</p>
+              <h1 className="text-5xl md:text-6xl text-term-white font-logo">Lifelines</h1>
+              <p className="text-term-gray text-md md:text-xl">A text-based life simulation</p>
             </div>
             
             <div className="space-y-4">

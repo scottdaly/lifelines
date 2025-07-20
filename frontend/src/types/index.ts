@@ -79,6 +79,7 @@ export interface StageConfig {
 }
 
 import type { GeneratedBackground } from './procedural';
+import type { MemorySystem } from './memory';
 
 export type GameState = {
   seed: string;
@@ -101,6 +102,7 @@ export type GameState = {
   narrativePressure?: number; // 0-1, tracks need for dramatic events
   lastMilestoneAge?: number; // Track last milestone for proper progression
   currentSubTurn?: string; // Track current sub-turn if in one
+  memorySystem?: MemorySystem; // Hierarchical memory system
 };
 
 export interface Choice {
@@ -135,4 +137,5 @@ export interface DynamicTurnContext {
 export interface PlayerChoice {
   id: string;
   label?: string;
+  isCustom?: boolean;
 }

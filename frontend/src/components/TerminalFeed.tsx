@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { LoadingIndicator } from './LoadingIndicator';
+import { MemoryIndicator } from './MemoryIndicator';
 
 export function TerminalFeed() {
   const { narrativeLines, isTyping, setTyping, isLoading } = useGameStore();
@@ -93,6 +94,7 @@ export function TerminalFeed() {
         const isTimeSkip = line.includes('YEARS PASS');
         const isAgeNarrative = (line.includes('You turn') || line.includes('You reach') || line.includes('Age ') || line.includes('At ') || line.includes('You mark')) && 
                                (line.includes('year') || line.includes('day') || line.includes('life'));
+        const isMemoryCallback = line.startsWith('[MEMORY_CALLBACK]');
         const totalLines = displayedLines.length;
         const distanceFromEnd = totalLines - index - 1;
         
@@ -159,6 +161,8 @@ export function TerminalFeed() {
                   {line}
                 </span>
               </div>
+            ) : isMemoryCallback ? (
+              <MemoryIndicator text={line} />
             ) : (
               <>
                 <span className="text-term-green mr-2">{'>'}</span>
