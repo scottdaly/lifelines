@@ -33,7 +33,7 @@ export function TimelineMini() {
   
   return (
     <>
-      <div className="border-simple p-4">
+      <div className="border-simple p-4 rounded-sm">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-bold text-term-white">TIMELINE</h3>
           <button

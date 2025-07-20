@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
-import { soundManager } from '../utils/sound';
 
 export function ChoiceList() {
   const { gameState, processTurn, isLoading, isTyping, addNarrativeLine } = useGameStore();
@@ -9,9 +8,6 @@ export function ChoiceList() {
   
   const handleChoice = async (choice: typeof choices[0]) => {
     if (isLoading || isTyping) return;
-    
-    // Play click sound
-    soundManager.playClickSound();
     
     // Optimistic echo
     addNarrativeLine(`> ${choice.label}`);

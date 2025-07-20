@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
-import type { GameState, NPC, Relationship, Stats } from '../types';
-import type { GeneratedBackground } from '../types/procedural';
+import type { GameState, NPC, Relationship } from '../types';
 
 const BIRTHPLACES = [
   'New York City', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix',
@@ -26,7 +25,7 @@ export function HomePage() {
   const [characterName, setCharacterName] = useState('');
   const [characterGender, setCharacterGender] = useState<'male' | 'female' | 'neutral'>('neutral');
   
-  const generateParents = (birthYear: number): Relationship[] => {
+  const generateParents = (_birthYear: number): Relationship[] => {
     const parentAge = 25 + Math.floor(Math.random() * 15); // Parents are 25-40 when child is born
     
     const mother: NPC = {
@@ -131,7 +130,10 @@ export function HomePage() {
             tags: ['start', 'birth']
           }
         ],
-        proceduralBackground: background
+        proceduralBackground: background,
+        narrativePressure: 0,
+        lastMilestoneAge: 0,
+        currentSubTurn: undefined
       };
       
       initializeGame(newGameState);
@@ -179,7 +181,10 @@ export function HomePage() {
             label: 'Take your first breath',
             tags: ['start', 'birth']
           }
-        ]
+        ],
+        narrativePressure: 0,
+        lastMilestoneAge: 0,
+        currentSubTurn: undefined
       };
       
       initializeGame(newGameState);

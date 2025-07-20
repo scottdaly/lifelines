@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, Choice, PlayerChoice, TurnResponse } from '../types';
+import type { GameState, PlayerChoice, TurnResponse } from '../types';
 
 interface GameStore {
   // Game State
@@ -37,7 +37,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     
     // Add procedural background narrative if available
     if (gameState.proceduralBackground) {
-      const { narrativeContext, birthplace, familyBackground, era } = gameState.proceduralBackground;
+      const { narrativeContext, birthplace, era } = gameState.proceduralBackground;
       narrativeLines.push('');
       narrativeLines.push(`[Born in ${birthplace.name}, ${era.name}]`);
       narrativeLines.push(narrativeContext.familyStory);
@@ -76,8 +76,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // Build transition narrative lines
       const transitionLines: string[] = [];
       
-      if (turnResponse.transitionInfo.ageChange) {
+      // Add turn type indicator
+      if (turnResponse.transitionInfo.turnType === 'milestone') {
         transitionLines.push('');
+        transitionLines.push('[MILESTONE AGE]');
+      } else if (turnResponse.transitionInfo.turnType === 'sub-turn') {
+        transitionLines.push('');
+        transitionLines.push(`[${turnResponse.transitionInfo.timeSpan?.toUpperCase() || 'SUB-TURN'}]`);
+      } else if (turnResponse.transitionInfo.turnType === 'time-skip' && turnResponse.transitionInfo.timeSpan) {
+        transitionLines.push('');
+        transitionLines.push(`[${turnResponse.transitionInfo.timeSpan.toUpperCase()} PASS]`);
+      }
+      
+      if (turnResponse.transitionInfo.ageChange) {
+        if (turnResponse.transitionInfo.turnType !== 'milestone') {
+          transitionLines.push('');
+        }
         transitionLines.push(`[AGE ${turnResponse.transitionInfo.ageChange.newAge}]`);
         transitionLines.push(turnResponse.transitionInfo.ageChange.narrative);
         transitionLines.push('');

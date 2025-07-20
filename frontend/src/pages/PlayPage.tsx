@@ -54,6 +54,9 @@ export function PlayPage() {
         <h1 className="text-lg text-term-white font-logo">Lifelines</h1>
         <div className="text-xs text-term-gray">
           {gameState.character.name} | Age {age}
+          {gameState.currentSubTurn && (
+            <span className="ml-1 text-term-yellow">• {gameState.currentSubTurn}</span>
+          )}
         </div>
       </div>
       
@@ -63,6 +66,9 @@ export function PlayPage() {
           <h1 className="text-2xl text-term-white font-logo">Lifelines</h1>
           <div className="text-sm text-term-gray">
             {gameState.character.name} | Age {age} | Year {gameState.currentYear}
+            {gameState.currentSubTurn && (
+              <span className="ml-2 text-term-yellow">• {gameState.currentSubTurn}</span>
+            )}
           </div>
         </div>
         

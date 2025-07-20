@@ -14,18 +14,11 @@ const STAT_LABELS: Record<keyof Stats, string> = {
 };
 
 export function StatsPanel() {
-  const { gameState, currentToast } = useGameStore();
+  const { gameState } = useGameStore();
   const [previousStats, setPreviousStats] = useState<Stats | null>(null);
   const [statChanges, setStatChanges] = useState<Partial<Stats>>({});
   
   const stats = gameState?.character.stats;
-  
-  useEffect(() => {
-    if (currentToast?.deltas) {
-      setStatChanges(currentToast.deltas);
-      setTimeout(() => setStatChanges({}), 3000);
-    }
-  }, [currentToast]);
   
   useEffect(() => {
     if (stats && previousStats) {
@@ -47,7 +40,7 @@ export function StatsPanel() {
   if (!stats) return null;
   
   return (
-    <div className="border-simple p-4">
+    <div className="border-simple p-4 rounded-sm">
       <h3 className="text-sm font-bold mb-3 text-term-white">STATS</h3>
       <div className="space-y-2">
         {Object.entries(stats).map(([key, value]) => {
@@ -83,6 +76,26 @@ export function StatsPanel() {
           );
         })}
       </div>
+      
+      {/* Narrative Pressure Indicator */}
+      {gameState?.narrativePressure !== undefined && gameState.narrativePressure > 0 && (
+        <div className="mt-3 pt-3 border-t border-term-gray-dark">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-term-gray">Drama</span>
+            <span className={
+              gameState.narrativePressure > 0.7 ? 'text-term-red' :
+              gameState.narrativePressure > 0.4 ? 'text-term-yellow' :
+              'text-term-gray'
+            }>
+              {gameState.narrativePressure > 0.7 ? 'HIGH' :
+               gameState.narrativePressure > 0.4 ? 'MED' : 'LOW'}
+            </span>
+          </div>
+          <div className="text-xs font-mono">
+            [{'█'.repeat(Math.floor(gameState.narrativePressure * 10))}{'░'.repeat(10 - Math.floor(gameState.narrativePressure * 10))}]
+          </div>
+        </div>
+      )}
     </div>
   );
 }

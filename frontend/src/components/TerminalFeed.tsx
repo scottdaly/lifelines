@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { soundManager } from '../utils/sound';
 import { LoadingIndicator } from './LoadingIndicator';
 
 export function TerminalFeed() {
@@ -44,7 +43,6 @@ export function TerminalFeed() {
         
         // Play typing sound for every few characters
         if (currentCharIndex % 3 === 0) {
-          soundManager.playTypeSound();
         }
       }, CHAR_DELAY);
       
@@ -90,6 +88,11 @@ export function TerminalFeed() {
         const isEventLine = line.startsWith('[') && line.endsWith(']') && line.includes(':');
         const isRelationshipHeader = line === '[Relationships]';
         const isRelationshipLine = line.startsWith('- ') && line.includes(':');
+        const isMilestone = line === '[MILESTONE AGE]';
+        const isSubTurn = line.startsWith('[') && line.endsWith(']') && !line.includes(':') && !isAgeMarker && !isMilestone && line !== '[Relationships]';
+        const isTimeSkip = line.includes('YEARS PASS');
+        const isAgeNarrative = (line.includes('You turn') || line.includes('You reach') || line.includes('Age ') || line.includes('At ') || line.includes('You mark')) && 
+                               (line.includes('year') || line.includes('day') || line.includes('life'));
         const totalLines = displayedLines.length;
         const distanceFromEnd = totalLines - index - 1;
         
@@ -97,7 +100,7 @@ export function TerminalFeed() {
         let opacityValue = 1;
         
         // Special elements maintain higher visibility
-        const isSpecialElement = isAgeMarker || isEventLine || isRelationshipHeader || isUserChoice;
+        const isSpecialElement = isAgeMarker || isEventLine || isRelationshipHeader || isUserChoice || isMilestone || isSubTurn || isTimeSkip || isAgeNarrative;
         
         if (distanceFromEnd > 20) {
           opacityValue = isSpecialElement ? 0.5 : 0.3; // Very old content
@@ -117,7 +120,7 @@ export function TerminalFeed() {
             }}
           >
             {isUserChoice ? (
-              <div className="inline-block bg-term-gray-dark border border-term-gray px-4 py-2 rounded my-1" style={{ opacity: opacityValue }}>
+              <div className="inline-block bg-term-gray-dark px-2 py-1 rounded-sm my-1" style={{ opacity: opacityValue }}>
                 <span className="text-term-white">{line.substring(2)}</span>
               </div>
             ) : isAgeMarker ? (
@@ -125,17 +128,37 @@ export function TerminalFeed() {
                 {line}
               </span>
             ) : isEventLine ? (
-              <span className="text-term-yellow">
-                {line}
-              </span>
+              <EventLine line={line} opacity={opacityValue} />
             ) : isRelationshipHeader ? (
-              <span className="text-term-gray mt-2">
+              <span className="text-term-gray mt-2 block">
                 {line}
               </span>
             ) : isRelationshipLine ? (
-              <span className="text-term-gray ml-4">
-                {line}
-              </span>
+              <RelationshipLine line={line} opacity={opacityValue} />
+            ) : isMilestone ? (
+              <div className="text-center my-3" style={{ opacity: opacityValue }}>
+                <span className="inline-block bg-term-yellow text-term-black px-4 py-1 font-bold text-sm rounded">
+                  {line}
+                </span>
+              </div>
+            ) : isSubTurn ? (
+              <div className="text-center my-2" style={{ opacity: opacityValue }}>
+                <span className="inline-block border border-term-yellow text-term-yellow px-3 py-1 text-sm">
+                  {line}
+                </span>
+              </div>
+            ) : isTimeSkip ? (
+              <div className="text-center my-2" style={{ opacity: opacityValue }}>
+                <span className="text-term-gray italic">
+                  {line}
+                </span>
+              </div>
+            ) : isAgeNarrative ? (
+              <div className="text-center my-1" style={{ opacity: opacityValue }}>
+                <span className="text-term-gray">
+                  {line}
+                </span>
+              </div>
             ) : (
               <>
                 <span className="text-term-green mr-2">{'>'}</span>
@@ -157,6 +180,96 @@ export function TerminalFeed() {
           <LoadingIndicator />
         </div>
       )}
+    </div>
+  );
+}
+
+// Component to render event lines with enhanced visual formatting
+function EventLine({ line, opacity }: { line: string; opacity: number }) {
+  // Parse event line format: [Event Title: STAT1 +5, STAT2 -3]
+  const match = line.match(/^\[(.*?):(.*?)\]$/);
+  
+  if (!match) {
+    return <span className="text-term-yellow">{line}</span>;
+  }
+  
+  const [, title, statsString] = match;
+  const stats = statsString ? statsString.split(',').map(s => s.trim()).filter(Boolean) : [];
+  
+  return (
+    <div className="inline-block" style={{ opacity }}>
+      <div className="border border-term-yellow bg-term-black px-3 py-2 rounded-sm">
+        <div className="flex items-center gap-3">
+          <span className="text-term-yellow font-semibold">{title}</span>
+          {stats.length > 0 && (
+            <>
+              <span className="text-term-gray">|</span>
+              <div className="flex gap-3 text-sm">
+                {stats.map((stat, i) => {
+                  const [statName, change] = stat.split(' ');
+                  const isPositive = change && change.startsWith('+');
+                  const isNegative = change && change.startsWith('-');
+                  
+                  return (
+                    <div key={i} className="flex items-center gap-1">
+                      <span className="text-term-gray text-xs">{statName}:</span>
+                      <span className={
+                        isPositive ? 'text-term-green font-mono' : 
+                        isNegative ? 'text-term-red font-mono' : 
+                        'text-term-white font-mono'
+                      }>
+                        {change}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Component to render relationship change lines with visual formatting
+function RelationshipLine({ line, opacity }: { line: string; opacity: number }) {
+  // Parse format: "- Name: narrative impact (stat1 +5, stat2 -3)"
+  const match = line.match(/^- (.*?): (.*?) \((.*?)\)$/);
+  
+  if (!match) {
+    return <span className="text-term-gray ml-4">{line}</span>;
+  }
+  
+  const [, name, narrative, statsString] = match;
+  const stats = statsString.split(',').map(s => s.trim());
+  
+  return (
+    <div className="ml-4 mb-1" style={{ opacity }}>
+      <div className="inline-block bg-term-gray-dark border-l-2 border-term-yellow px-3 py-1 rounded-sm">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-term-white font-medium">{name}:</span>
+          <span className="text-term-gray italic">{narrative}</span>
+          <span className="text-term-gray">•</span>
+          <div className="flex gap-2">
+            {stats.map((stat, i) => {
+              const [statName, change] = stat.split(' ');
+              const isPositive = change && change.startsWith('+');
+              const isNegative = change && change.startsWith('-');
+              
+              return (
+                <span key={i} className={
+                  isPositive ? 'text-term-green text-xs font-mono' : 
+                  isNegative ? 'text-term-red text-xs font-mono' : 
+                  'text-term-white text-xs font-mono'
+                }>
+                  {statName} {change}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

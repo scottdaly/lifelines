@@ -1,41 +1,12 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
-import type { Relationship } from '../types';
-
-const REL_TYPE_ICONS: Record<string, string> = {
-  parent: '👨‍👩‍👧',
-  sibling: '👫',
-  friend: '🤝',
-  rival: '⚔️',
-  mentor: '🎓',
-  romantic: '💕',
-  spouse: '💍',
-  coworker: '💼',
-  child: '👶'
-};
 
 export function RelationshipsPanel() {
-  const { gameState, currentToast } = useGameStore();
-  const [highlightedNpcs, setHighlightedNpcs] = useState<Set<string>>(new Set());
+  const { gameState } = useGameStore();
+  const [highlightedNpcs] = useState<Set<string>>(new Set());
   
   const relationships = gameState?.relationships.filter(r => r.status === 'active') || [];
-  
-  useEffect(() => {
-    if (currentToast?.relHighlights) {
-      const highlights = new Set<string>();
-      currentToast.relHighlights.forEach(highlight => {
-        // Extract NPC names from highlights
-        relationships.forEach(rel => {
-          if (highlight.includes(rel.npc.name)) {
-            highlights.add(rel.npc.id);
-          }
-        });
-      });
-      setHighlightedNpcs(highlights);
-      setTimeout(() => setHighlightedNpcs(new Set()), 3000);
-    }
-  }, [currentToast, relationships]);
   
   if (relationships.length === 0) {
     return (
@@ -47,7 +18,7 @@ export function RelationshipsPanel() {
   }
   
   return (
-    <div className="border-simple p-4">
+    <div className="border-simple p-4 rounded-sm">
       <h3 className="text-sm font-bold mb-3 text-term-white">RELATIONSHIPS</h3>
       <div className="space-y-2">
         {relationships.map((rel) => (
