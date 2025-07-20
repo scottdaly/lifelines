@@ -18,6 +18,7 @@ export default {
       },
       fontFamily: {
         'mono': ['Courier New', 'monospace'],
+        'logo': ['Bitcount', 'monospace'],
       },
       animation: {
         'typewriter': 'typewriter 0.1s steps(1) infinite',

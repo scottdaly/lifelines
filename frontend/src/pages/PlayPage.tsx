@@ -10,7 +10,7 @@ import { useGameStore } from '../store/gameStore';
 
 export function PlayPage() {
   const navigate = useNavigate();
-  const { gameState, saveGame, isLoading } = useGameStore();
+  const { gameState, saveGame } = useGameStore();
   const [showSaveId, setShowSaveId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -51,7 +51,7 @@ export function PlayPage() {
     <div className="flex flex-col md:flex-row h-screen">
       {/* Header Bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-term-gray-dark md:hidden">
-        <h1 className="text-lg font-bold text-term-white">LIFELINES</h1>
+        <h1 className="text-lg text-term-white font-logo">Lifelines</h1>
         <div className="text-xs text-term-gray">
           {gameState.character.name} | Age {age}
         </div>
@@ -60,7 +60,7 @@ export function PlayPage() {
       {/* Main Area */}
       <div className="flex-1 flex flex-col p-4 md:p-6">
         <div className="hidden md:flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-term-white">LIFELINES</h1>
+          <h1 className="text-2xl text-term-white font-logo">Lifelines</h1>
           <div className="text-sm text-term-gray">
             {gameState.character.name} | Age {age} | Year {gameState.currentYear}
           </div>
@@ -71,13 +71,7 @@ export function PlayPage() {
         </div>
         
         <div className="border-simple p-4">
-          {isLoading ? (
-            <div className="text-center text-term-gray">
-              Processing...
-            </div>
-          ) : (
-            <ChoiceList />
-          )}
+          <ChoiceList />
         </div>
       </div>
       

@@ -41,18 +41,26 @@ export function ChoiceList() {
   
   return (
     <div className="space-y-2">
-      <div className="text-xs text-term-gray mb-2">What will you do?</div>
+      <div className="text-xs text-term-gray mb-2">
+        {isLoading || isTyping ? 'Loading...' : 'What will you do?'}
+      </div>
       {choices.map((choice, index) => (
         <motion.button
           key={choice.id}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: isLoading || isTyping ? 0.4 : 1 }}
           transition={{ delay: index * 0.05 }}
           onClick={() => handleChoice(choice)}
           disabled={isLoading || isTyping}
-          className="w-full text-left hover:bg-term-white hover:text-term-black transition-colors py-1 px-2 group"
+          className={`w-full text-left transition-all py-1 px-2 group ${
+            isLoading || isTyping 
+              ? 'cursor-not-allowed opacity-40' 
+              : 'hover:bg-term-white hover:text-term-black cursor-pointer'
+          }`}
         >
-          <span className="text-term-yellow group-hover:text-term-black">[{index + 1}]</span>
+          <span className={`${
+            isLoading || isTyping ? 'text-term-gray' : 'text-term-yellow'
+          } group-hover:text-term-black`}>[{index + 1}]</span>
           <span className="ml-2">{choice.label}</span>
         </motion.button>
       ))}

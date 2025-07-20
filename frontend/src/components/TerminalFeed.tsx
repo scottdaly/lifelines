@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { soundManager } from '../utils/sound';
+import { LoadingIndicator } from './LoadingIndicator';
 
 export function TerminalFeed() {
-  const { narrativeLines, isTyping, setTyping } = useGameStore();
+  const { narrativeLines, isTyping, setTyping, isLoading } = useGameStore();
   const [displayedLines, setDisplayedLines] = useState<string[]>([]);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
   
-  const CHAR_DELAY = 40; // ms per character
+  const CHAR_DELAY = 10; // ms per character
   
   // Handle typewriter effect
   useEffect(() => {
@@ -60,7 +61,7 @@ export function TerminalFeed() {
     if (!isUserScrolling.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [displayedLines]);
+  }, [displayedLines, isLoading]);
   
   const handleScroll = () => {
     if (!scrollRef.current) return;
@@ -86,34 +87,54 @@ export function TerminalFeed() {
         
         const isUserChoice = line.startsWith('> ');
         const isAgeMarker = line.startsWith('[AGE ') && line.endsWith(']');
-        const isScenarioContext = line.startsWith('---') && line.endsWith('---');
+        const isEventLine = line.startsWith('[') && line.endsWith(']') && line.includes(':');
+        const isRelationshipHeader = line === '[Relationships]';
+        const isRelationshipLine = line.startsWith('- ') && line.includes(':');
         const totalLines = displayedLines.length;
         const distanceFromEnd = totalLines - index - 1;
         
-        // Simple two-level opacity: faded for anything 2+ lines back
-        const isFaded = distanceFromEnd >= 2;
-        const opacityValue = isFaded ? 0.4 : 1;
+        // More gradual opacity falloff
+        let opacityValue = 1;
+        
+        // Special elements maintain higher visibility
+        const isSpecialElement = isAgeMarker || isEventLine || isRelationshipHeader || isUserChoice;
+        
+        if (distanceFromEnd > 20) {
+          opacityValue = isSpecialElement ? 0.5 : 0.3; // Very old content
+        } else if (distanceFromEnd > 10) {
+          opacityValue = isSpecialElement ? 0.7 : 0.5; // Older content
+        } else if (distanceFromEnd > 5) {
+          opacityValue = isSpecialElement ? 0.85 : 0.7; // Recent but not latest
+        }
+        // Lines 0-5 from the end stay at full opacity
         
         return (
           <div
             key={index}
-            className={`mb-2 ${isAgeMarker || isScenarioContext ? 'text-center' : ''}`}
+            className={`mb-1 ${isAgeMarker ? 'text-center mb-2' : ''}`}
             style={{
-              opacity: opacityValue
+              opacity: isUserChoice ? 1 : opacityValue
             }}
           >
             {isUserChoice ? (
-              <>
-                <span className="text-term-yellow mr-2">{'>'}</span>
+              <div className="inline-block bg-term-gray-dark border border-term-gray px-4 py-2 rounded my-1" style={{ opacity: opacityValue }}>
                 <span className="text-term-white">{line.substring(2)}</span>
-              </>
+              </div>
             ) : isAgeMarker ? (
               <span className="text-term-yellow font-bold text-lg">
                 {line}
               </span>
-            ) : isScenarioContext ? (
-              <span className="text-term-gray italic">
-                {line.substring(4, line.length - 4)}
+            ) : isEventLine ? (
+              <span className="text-term-yellow">
+                {line}
+              </span>
+            ) : isRelationshipHeader ? (
+              <span className="text-term-gray mt-2">
+                {line}
+              </span>
+            ) : isRelationshipLine ? (
+              <span className="text-term-gray ml-4">
+                {line}
               </span>
             ) : (
               <>
@@ -129,6 +150,13 @@ export function TerminalFeed() {
           </div>
         );
       })}
+      
+      {/* Show loading indicator at the bottom when processing */}
+      {isLoading && !isTyping && (
+        <div className="mb-2">
+          <LoadingIndicator />
+        </div>
+      )}
     </div>
   );
 }

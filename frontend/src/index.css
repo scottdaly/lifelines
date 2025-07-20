@@ -64,6 +64,10 @@
   .text-error {
     @apply text-term-red;
   }
+
+  .font-logo {
+    font-weight: 300;
+  }
 }
 
 @layer utilities {

@@ -74,6 +74,8 @@ export interface StageConfig {
   promptTags: string[];
 }
 
+import type { GeneratedBackground } from './procedural';
+
 export type GameState = {
   seed: string;
   currentYear: number;
@@ -91,6 +93,7 @@ export type GameState = {
   relationships: Relationship[];
   events: LifeEvent[];
   pendingChoices: Choice[];
+  proceduralBackground?: GeneratedBackground;
 };
 
 export interface Choice {
@@ -101,18 +104,12 @@ export interface Choice {
 
 export interface TurnResponse {
   narrativeLines: string[];
-  toast: {
-    summary: string;
-    deltas: Partial<Stats>;
-    relHighlights: string[];
-  };
   transitionInfo: {
     ageChange?: {
       previousAge: number;
       newAge: number;
       narrative: string;
     };
-    scenarioContext: string;
   };
   newGameState: GameState;
 }

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
-import type { GameState, NPC, Relationship } from '../types';
+import type { GameState, NPC, Relationship, Stats } from '../types';
+import type { GeneratedBackground } from '../types/procedural';
 
 const BIRTHPLACES = [
   'New York City', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix',
@@ -84,58 +85,108 @@ export function HomePage() {
     ];
   };
   
-  const createNewGame = () => {
+  const createNewGame = async () => {
     if (!characterName.trim()) {
       setCharacterName('Alex');
     }
     
-    const birthYear = 2000 + Math.floor(Math.random() * 10);
-    const birthplace = BIRTHPLACES[Math.floor(Math.random() * BIRTHPLACES.length)];
-    const parents = generateParents(birthYear);
+    setIsLoading(true);
     
-    // Base traits depending on circumstances
-    const traits = ['innocent', 'developing'];
-    if (Math.random() > 0.7) traits.push('curious');
-    if (Math.random() > 0.8) traits.push('energetic');
-    
-    // Family wealth influences starting wealth
-    const familyWealth = Math.max(...parents.map(p => p.npc.stats.wealth || 0));
-    
-    const newGameState: GameState = {
-      seed: Math.random().toString(36).substring(2),
-      currentYear: birthYear,
-      stageLocalIndex: 0,
-      character: {
-        id: `char_${Date.now()}`,
-        name: characterName.trim() || 'Alex',
-        gender: characterGender,
-        dob: `${birthYear}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-        birthplace,
-        stats: {
-          intelligence: 10 + Math.floor(Math.random() * 20),
-          charisma: 20 + Math.floor(Math.random() * 30),
-          strength: 5 + Math.floor(Math.random() * 10),
-          creativity: 30 + Math.floor(Math.random() * 20),
-          luck: 30 + Math.floor(Math.random() * 40),
-          health: 80 + Math.floor(Math.random() * 20),
-          wealth: Math.floor(familyWealth * 0.1) // Inherit 10% of family wealth as starting
+    try {
+      const birthYear = 2000 + Math.floor(Math.random() * 20);
+      
+      // Generate procedural background
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/generate-background`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ birthYear })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate background');
+      }
+      
+      const { background, parents, suggestedStats } = await response.json();
+      
+      const newGameState: GameState = {
+        seed: Math.random().toString(36).substring(2),
+        currentYear: birthYear,
+        stageLocalIndex: 0,
+        character: {
+          id: `char_${Date.now()}`,
+          name: characterName.trim() || 'Alex',
+          gender: characterGender,
+          dob: `${birthYear}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+          birthplace: background.birthplace.name,
+          stats: suggestedStats,
+          traits: background.traits,
+          inventory: {}
         },
-        traits,
-        inventory: {}
-      },
-      relationships: parents,
-      events: [],
-      pendingChoices: [
-        {
-          id: 'birth',
-          label: 'Take your first breath',
-          tags: ['start', 'birth']
-        }
-      ]
-    };
-    
-    initializeGame(newGameState);
-    navigate('/play');
+        relationships: parents,
+        events: [],
+        pendingChoices: [
+          {
+            id: 'birth',
+            label: 'Take your first breath',
+            tags: ['start', 'birth']
+          }
+        ],
+        proceduralBackground: background
+      };
+      
+      initializeGame(newGameState);
+      navigate('/play');
+    } catch (error) {
+      console.error('Failed to create game:', error);
+      // Fallback to simple generation
+      const birthYear = 2000 + Math.floor(Math.random() * 10);
+      const birthplace = BIRTHPLACES[Math.floor(Math.random() * BIRTHPLACES.length)];
+      const parents = generateParents(birthYear);
+      
+      const traits = ['innocent', 'developing'];
+      if (Math.random() > 0.7) traits.push('curious');
+      if (Math.random() > 0.8) traits.push('energetic');
+      
+      const familyWealth = Math.max(...parents.map(p => p.npc.stats.wealth || 0));
+      
+      const newGameState: GameState = {
+        seed: Math.random().toString(36).substring(2),
+        currentYear: birthYear,
+        stageLocalIndex: 0,
+        character: {
+          id: `char_${Date.now()}`,
+          name: characterName.trim() || 'Alex',
+          gender: characterGender,
+          dob: `${birthYear}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+          birthplace,
+          stats: {
+            intelligence: 10 + Math.floor(Math.random() * 20),
+            charisma: 20 + Math.floor(Math.random() * 30),
+            strength: 5 + Math.floor(Math.random() * 10),
+            creativity: 30 + Math.floor(Math.random() * 20),
+            luck: 30 + Math.floor(Math.random() * 40),
+            health: 80 + Math.floor(Math.random() * 20),
+            wealth: Math.floor(familyWealth * 0.1)
+          },
+          traits,
+          inventory: {}
+        },
+        relationships: parents,
+        events: [],
+        pendingChoices: [
+          {
+            id: 'birth',
+            label: 'Take your first breath',
+            tags: ['start', 'birth']
+          }
+        ]
+      };
+      
+      initializeGame(newGameState);
+      navigate('/play');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleLoadGame = async () => {
@@ -176,7 +227,7 @@ export function HomePage() {
 ║          |___|_| \\_|_____|____/  ║
 ╚═══════════════════════════════════╝`}
               </pre>
-              <h1 className="text-4xl font-bold text-term-white">LIFELINES</h1>
+              <h1 className="text-4xl text-term-white font-logo">Lifelines</h1>
               <p className="text-term-gray text-sm">A text-based life simulation</p>
             </div>
             

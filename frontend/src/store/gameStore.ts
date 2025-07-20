@@ -10,7 +10,6 @@ interface GameStore {
   // UI State
   narrativeLines: string[];
   isTyping: boolean;
-  currentToast: TurnResponse['toast'] | null;
   
   // Actions
   initializeGame: (gameState: GameState) => void;
@@ -20,7 +19,6 @@ interface GameStore {
   clearError: () => void;
   addNarrativeLine: (line: string) => void;
   setTyping: (isTyping: boolean) => void;
-  clearToast: () => void;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -32,14 +30,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
   error: null,
   narrativeLines: [],
   isTyping: false,
-  currentToast: null,
   
   // Actions
   initializeGame: (gameState) => {
+    const narrativeLines = ['Welcome to the world. Your story begins...'];
+    
+    // Add procedural background narrative if available
+    if (gameState.proceduralBackground) {
+      const { narrativeContext, birthplace, familyBackground, era } = gameState.proceduralBackground;
+      narrativeLines.push('');
+      narrativeLines.push(`[Born in ${birthplace.name}, ${era.name}]`);
+      narrativeLines.push(narrativeContext.familyStory);
+      narrativeLines.push(narrativeContext.environmentDescription);
+      narrativeLines.push('');
+      narrativeLines.push(`Your traits: ${gameState.character.traits.join(', ')}`);
+      narrativeLines.push('');
+    }
+    
     set({ 
       gameState, 
       error: null,
-      narrativeLines: ['Welcome to the world. Your story begins...']
+      narrativeLines
     });
   },
   
@@ -69,11 +80,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         transitionLines.push('');
         transitionLines.push(`[AGE ${turnResponse.transitionInfo.ageChange.newAge}]`);
         transitionLines.push(turnResponse.transitionInfo.ageChange.narrative);
+        transitionLines.push('');
       }
-      
-      transitionLines.push('');
-      transitionLines.push(`--- ${turnResponse.transitionInfo.scenarioContext} ---`);
-      transitionLines.push('');
       
       // Update game state with transition lines followed by narrative
       set({ 
@@ -83,16 +91,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
           ...transitionLines,
           ...turnResponse.narrativeLines
         ],
-        currentToast: turnResponse.toast,
         isLoading: false
       });
-      
-      // Clear toast after 5 seconds
-      setTimeout(() => {
-        if (get().currentToast === turnResponse.toast) {
-          set({ currentToast: null });
-        }
-      }, 5000);
       
     } catch (error) {
       set({ 
@@ -161,7 +161,5 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }));
   },
   
-  setTyping: (isTyping) => set({ isTyping }),
-  
-  clearToast: () => set({ currentToast: null })
+  setTyping: (isTyping) => set({ isTyping })
 }));
