@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TerminalFeed } from '../components/TerminalFeed';
 import { ChoiceList } from '../components/ChoiceList';
@@ -8,18 +8,46 @@ import { RelationshipsPanel } from '../components/RelationshipsPanel';
 import { TimelineMini } from '../components/TimelineMini';
 import { CoreMemoriesPanel } from '../components/CoreMemoriesPanel';
 import { useGameStore } from '../store/gameStore';
+import { useAuthStore } from '../store/authStore';
 
 export function PlayPage() {
   const navigate = useNavigate();
-  const { gameState, saveGame } = useGameStore();
-  const [showSaveId, setShowSaveId] = useState<string | null>(null);
+  const { gameId } = useParams<{ gameId: string }>();
+  const { gameState, initializeGame } = useGameStore();
+  const { tokens } = useAuthStore();
+  const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
-    if (!gameState) {
-      navigate('/');
+    loadGame();
+  }, [gameId]);
+  
+  const loadGame = async () => {
+    if (!gameId) {
+      navigate('/dashboard');
+      return;
     }
-  }, [gameState, navigate]);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/games/${gameId}`, {
+        headers: {
+          'Authorization': `Bearer ${tokens?.accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load game');
+      }
+      
+      const data = await response.json();
+      initializeGame(data.gameState);
+    } catch (error) {
+      console.error('Failed to load game:', error);
+      navigate('/dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -28,21 +56,14 @@ export function PlayPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
-  // Save game on ESC
-  useEffect(() => {
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        const saveId = await saveGame();
-        if (saveId) {
-          setShowSaveId(saveId);
-          setTimeout(() => setShowSaveId(null), 5000);
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saveGame]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-term-gray">Loading...</div>
+      </div>
+    );
+  }
   
   if (!gameState) return null;
   
@@ -94,19 +115,6 @@ export function PlayPage() {
         
         <TimelineMini />
       </div>
-      
-      {/* Save notification */}
-      {showSaveId && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="fixed top-4 right-4 bg-term-black border border-term-yellow p-4"
-        >
-          <p className="text-sm text-term-yellow mb-1">Game saved!</p>
-          <p className="text-xs text-term-gray">ID: {showSaveId}</p>
-        </motion.div>
-      )}
     </div>
   );
 }

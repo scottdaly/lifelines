@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
+import { useAuthStore } from '../store/authStore';
+import { format } from 'date-fns';
+import { getRandomCharacter } from '../utils/names';
 import type { GameState, NPC, Relationship } from '../types';
 
 const BIRTHPLACES = [
@@ -16,14 +19,94 @@ const PARENT_NAMES = {
   female: ['Mary', 'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 'Susan', 'Jessica']
 };
 
+interface SavedGame {
+  id: string;
+  characterName: string | null;
+  currentAge: number | null;
+  currentStage: string | null;
+  lastPlayed: Date;
+  createdAt: Date;
+}
+
+const stageLabels: Record<string, string> = {
+  infancy: 'Infancy',
+  earlyChild: 'Early Childhood',
+  middleChild: 'Middle Childhood',
+  tween: 'Tween',
+  highSchool: 'High School',
+  youngAdult: 'Young Adult',
+  adult: 'Adult',
+  senior: 'Senior'
+};
+
 export function HomePage() {
   const navigate = useNavigate();
-  const { initializeGame, loadGame, error, clearError } = useGameStore();
+  const { initializeGame, error, clearError } = useGameStore();
+  const { tokens } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
-  const [loadId, setLoadId] = useState('');
   const [showCharacterCreation, setShowCharacterCreation] = useState(false);
   const [characterName, setCharacterName] = useState('');
   const [characterGender, setCharacterGender] = useState<'male' | 'female' | 'neutral'>('neutral');
+  const [games, setGames] = useState<SavedGame[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
+  
+  useEffect(() => {
+    loadGames();
+  }, []);
+  
+  const loadGames = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_URL}/api/games`, {
+        headers: {
+          'Authorization': `Bearer ${tokens?.accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load games');
+      }
+      
+      const data = await response.json();
+      setGames(data.games.map((game: any) => ({
+        ...game,
+        lastPlayed: new Date(game.lastPlayed),
+        createdAt: new Date(game.createdAt)
+      })));
+    } catch (err: any) {
+      console.error('Failed to load games:', err);
+    } finally {
+      setGamesLoading(false);
+    }
+  };
+  
+  const handleContinueGame = (gameId: string) => {
+    navigate(`/play/${gameId}`);
+  };
+  
+  const handleDeleteGame = async (gameId: string) => {
+    if (!confirm('Are you sure you want to delete this life?')) {
+      return;
+    }
+    
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_URL}/api/games/${gameId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${tokens?.accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete game');
+      }
+      
+      await loadGames();
+    } catch (err: any) {
+      console.error('Failed to delete game:', err);
+    }
+  };
   
   const generateParents = (_birthYear: number): Relationship[] => {
     const parentAge = 25 + Math.floor(Math.random() * 15); // Parents are 25-40 when child is born
@@ -97,7 +180,10 @@ export function HomePage() {
       // Generate procedural background
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/generate-background`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens?.accessToken}`
+        },
         body: JSON.stringify({ birthYear })
       });
       
@@ -136,8 +222,23 @@ export function HomePage() {
         currentSubTurn: undefined
       };
       
+      // Create the game on the backend
+      const createResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/games`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens?.accessToken}`
+        },
+        body: JSON.stringify({ gameState: newGameState })
+      });
+      
+      if (!createResponse.ok) {
+        throw new Error('Failed to create game');
+      }
+      
+      const { gameId } = await createResponse.json();
       initializeGame(newGameState);
-      navigate('/play');
+      navigate(`/play/${gameId}`);
     } catch (error) {
       console.error('Failed to create game:', error);
       // Fallback to simple generation
@@ -187,104 +288,122 @@ export function HomePage() {
         currentSubTurn: undefined
       };
       
+      // Create the game on the backend
+      const createResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/games`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens?.accessToken}`
+        },
+        body: JSON.stringify({ gameState: newGameState })
+      });
+      
+      if (!createResponse.ok) {
+        throw new Error('Failed to create game');
+      }
+      
+      const { gameId } = await createResponse.json();
       initializeGame(newGameState);
-      navigate('/play');
+      navigate(`/play/${gameId}`);
     } finally {
       setIsLoading(false);
     }
   };
   
-  const handleLoadGame = async () => {
-    if (!loadId.trim()) return;
-    
-    setIsLoading(true);
-    await loadGame(loadId);
-    
-    if (!error) {
-      navigate('/play');
-    }
-    setIsLoading(false);
-  };
   
   return (
-    <div className="flex items-center justify-center min-h-screen p-8">
-      <AnimatePresence mode="wait">
-        {!showCharacterCreation ? (
-          <motion.div
-            key="menu"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="max-w-md w-full space-y-4 md:space-y-8 p-8"
-          >
-            <div className="text-center">
-              <pre className="text-xs text-term-gray opacity-50 leading-none select-none hidden">
-{`╔═══════════════════════════════════╗
-║      _     ___ _____ _____ _     ║
-║     | |   |_ _|  ___| ____| |    ║
-║     | |    | || |_  |  _| | |    ║
-║     | |___ | ||  _| | |___| |___ ║
-║     |_____|___|_|   |_____|_____|║
-║           ___ _   _ _____ ___    ║
-║          |_ _| \\ | | ____/ __|   ║
-║           | ||  \\| |  _| \\___ \\  ║
-║           | || |\\  | |___ ___) | ║
-║          |___|_| \\_|_____|____/  ║
-╚═══════════════════════════════════╝`}
-              </pre>
-              <h1 className="text-5xl md:text-6xl text-term-white font-logo">Lifelines</h1>
-              <p className="text-term-gray text-md md:text-xl">A text-based life simulation</p>
-            </div>
-            
-            <div className="space-y-4">
-              <button
-                onClick={() => setShowCharacterCreation(true)}
-                disabled={isLoading}
-                className="w-full py-2 px-4 border-simple hover:bg-term-white hover:text-term-black transition-colors"
-              >
-                NEW GAME
-              </button>
-              
-              <button
-                onClick={() => {
-                  // Quick start with random character
-                  const randomGender = Math.random() > 0.5 ? 'male' : 'female';
-                  const names = {
-                    male: ['Alex', 'Sam', 'Jordan', 'Casey', 'Taylor', 'Jamie', 'Chris', 'Morgan', 'Ryan', 'Blake'],
-                    female: ['Alex', 'Sam', 'Jordan', 'Casey', 'Taylor', 'Jamie', 'Chris', 'Morgan', 'Emma', 'Sophia']
-                  };
-                  const randomName = names[randomGender][Math.floor(Math.random() * names[randomGender].length)];
-                  
-                  setCharacterName(randomName);
-                  setCharacterGender(randomGender);
-                  createNewGame();
-                }}
-                disabled={isLoading}
-                className="w-full py-2 px-4 border-simple hover:bg-term-white hover:text-term-black transition-colors"
-              >
-                QUICK START
-              </button>
-              
-              <div className="border-simple p-4 space-y-2">
-                <label className="text-sm text-term-gray">Load saved game:</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={loadId}
-                    onChange={(e) => setLoadId(e.target.value)}
-                    placeholder="Enter save ID"
-                    className="flex-1 bg-transparent border border-term-gray-dark px-3 py-1 text-term-white focus:outline-none focus:border-term-white"
-                  />
-                  <button
-                    onClick={handleLoadGame}
-                    disabled={isLoading || !loadId.trim()}
-                    className="px-4 py-1 border-simple hover:bg-term-white hover:text-term-black transition-colors disabled:text-term-gray disabled:hover:bg-transparent"
-                  >
-                    LOAD
-                  </button>
-                </div>
+    <div className="min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-screen p-8">
+        <AnimatePresence mode="wait">
+          {!showCharacterCreation ? (
+            <motion.div
+              key="menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="max-w-md w-full space-y-8"
+            >
+              {/* Logo */}
+              <div className="text-center">
+                <h1 className="text-5xl md:text-6xl text-term-white font-logo mb-2">Lifelines</h1>
+                <p className="text-term-gray text-md">A text-based life simulation</p>
               </div>
               
+              {/* New game buttons - vertical stack */}
+              <div className="space-y-4">
+                <button
+                  onClick={() => setShowCharacterCreation(true)}
+                  disabled={isLoading}
+                  className="w-full py-2 px-4 border-simple hover:bg-term-white hover:text-term-black transition-colors"
+                >
+                  NEW LIFE
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // Quick start with random character
+                    const { name, gender } = getRandomCharacter();
+                    setCharacterName(name);
+                    setCharacterGender(gender);
+                    createNewGame();
+                  }}
+                  disabled={isLoading}
+                  className="w-full py-2 px-4 border-simple hover:bg-term-white hover:text-term-black transition-colors"
+                >
+                  QUICK START
+                </button>
+                
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="w-full py-2 px-4 border-simple hover:bg-term-white hover:text-term-black transition-colors"
+                >
+                  ACCOUNT SETTINGS
+                </button>
+              </div>
+
+              {/* Saved games - scrollable */}
+              {games.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm text-term-gray text-center">Previous Lives</h3>
+                  <div className="max-h-48 overflow-y-auto border border-term-gray-dark rounded p-2 space-y-2">
+                    {games.map((game) => (
+                      <div
+                        key={game.id}
+                        className="border border-term-gray-dark rounded p-3 hover:border-term-gray transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="text-term-white font-bold">
+                              {game.characterName || 'Unknown'}
+                            </h4>
+                            <p className="text-xs text-term-gray">
+                              Age {game.currentAge || 0} • {stageLabels[game.currentStage || ''] || 'Unknown'}
+                            </p>
+                          </div>
+                          <p className="text-xs text-term-gray">
+                            {format(game.lastPlayed, 'MMM d')}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleContinueGame(game.id)}
+                            className="flex-1 text-xs bg-term-gray/20 text-term-gray py-1 rounded hover:bg-term-gray/30"
+                          >
+                            Continue
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGame(game.id)}
+                            className="text-xs text-red-500 hover:text-red-400 px-2"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div
                   className="border border-term-red p-3 text-sm text-term-red"
@@ -298,116 +417,95 @@ export function HomePage() {
                   </button>
                 </div>
               )}
-            </div>
-            
-            <div className="text-center text-xs text-term-gray space-y-1">
-              <p>Use number keys 1-5 for quick choices</p>
-              <p>Press ESC to save at any time</p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="character-creation"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="max-w-md w-full space-y-8 p-8"
-          >
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-term-white">CREATE YOUR CHARACTER</h2>
-              <p className="text-term-gray text-sm">Who will you become?</p>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
+
+              <div className="text-center text-xs text-term-gray space-y-1">
+                <p>Use number keys 1-5 for quick choices</p>
+                <p>Your progress is automatically saved</p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="character-creation"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="max-w-md w-full space-y-8"
+            >
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold text-term-white">CREATE YOUR CHARACTER</h2>
+                <p className="text-term-gray text-sm">Who will you become?</p>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="space-y-2">
                   <label className="text-sm text-term-gray">Name:</label>
-                  <button
-                    onClick={() => {
-                      const allNames = ['Alex', 'Sam', 'Jordan', 'Casey', 'Taylor', 'Jamie', 'Chris', 'Morgan', 
-                                       'Ryan', 'Blake', 'Emma', 'Sophia', 'Avery', 'Riley', 'Quinn', 'Sage'];
-                      setCharacterName(allNames[Math.floor(Math.random() * allNames.length)]);
-                    }}
-                    className="text-xs text-term-gray hover:text-term-white transition-colors"
-                    title="Random name"
-                  >
-                    [RANDOM]
-                  </button>
+                  <input
+                    type="text"
+                    value={characterName}
+                    onChange={(e) => setCharacterName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="w-full bg-transparent border border-term-gray-dark px-3 py-2 text-term-white focus:outline-none focus:border-term-white"
+                    autoFocus
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={characterName}
-                  onChange={(e) => setCharacterName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full bg-transparent border border-term-gray-dark px-3 py-2 text-term-white focus:outline-none focus:border-term-white"
-                  autoFocus
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm text-term-gray">Gender:</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['male', 'female', 'neutral'] as const).map((gender) => (
-                    <button
-                      key={gender}
-                      onClick={() => setCharacterGender(gender)}
-                      className={`py-2 text-center border-simple ${
-                        characterGender === gender ? 'bg-term-white text-term-black' : 'hover:bg-term-white hover:text-term-black'
-                      } transition-colors`}
-                    >
-                      {gender.charAt(0).toUpperCase() + gender.slice(1)}
-                    </button>
-                  ))}
+                
+                <div className="space-y-2">
+                  <label className="text-sm text-term-gray">Gender:</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['male', 'female', 'neutral'] as const).map((gender) => (
+                      <button
+                        key={gender}
+                        onClick={() => setCharacterGender(gender)}
+                        className={`py-2 text-center border-simple ${
+                          characterGender === gender ? 'bg-term-white text-term-black' : 'hover:bg-term-white hover:text-term-black'
+                        } transition-colors`}
+                      >
+                        {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              
-              <div className="text-xs text-term-gray space-y-1">
-                <p>• Your birthplace will be randomly selected</p>
-                <p>• You'll start with two loving parents</p>
-                <p>• Your initial stats are based on genetics and luck</p>
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowCharacterCreation(false)}
-                  className="flex-1 py-2 border-simple hover:bg-term-white hover:text-term-black transition-colors"
-                >
-                  BACK
-                </button>
-                <button
-                  onClick={createNewGame}
-                  className="flex-1 py-2 border-simple hover:bg-term-white hover:text-term-black transition-colors font-bold"
-                >
-                  BEGIN LIFE
-                </button>
-              </div>
-              
-              <div className="text-center">
+                
                 <button
                   onClick={() => {
-                    // Generate random name based on gender
-                    const randomGender = Math.random() > 0.5 ? 'male' : 'female';
-                    const names = {
-                      male: ['Alex', 'Sam', 'Jordan', 'Casey', 'Taylor', 'Jamie', 'Chris', 'Morgan'],
-                      female: ['Alex', 'Sam', 'Jordan', 'Casey', 'Taylor', 'Jamie', 'Chris', 'Morgan', 'Emma', 'Sophia']
-                    };
-                    const randomName = names[randomGender][Math.floor(Math.random() * names[randomGender].length)];
-                    
-                    setCharacterName(randomName);
-                    setCharacterGender(randomGender);
-                    
-                    // Immediately start the game
-                    setTimeout(() => createNewGame(), 100);
+                    // Randomize both name and gender
+                    const { name, gender } = getRandomCharacter();
+                    setCharacterName(name);
+                    setCharacterGender(gender);
                   }}
-                  className="text-xs text-term-gray hover:text-term-white transition-colors underline"
+                  className="w-full py-2 px-4 border border-term-gray-dark hover:bg-term-gray/20 transition-colors text-term-white flex items-center justify-center gap-2"
                 >
-                  or start with a random character
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.1-.89-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9c-.83 0-1.5-.67-1.5-1.5S6.67 6 7.5 6 9 6.67 9 7.5 8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5S17.33 9 16.5 9z"/>
+                  </svg>
+                  RANDOMIZE CHARACTER
                 </button>
+                
+                <div className="text-xs text-term-gray space-y-1">
+                  <p>• Your birthplace will be randomly selected</p>
+                  <p>• You'll start with two loving parents</p>
+                  <p>• Your initial stats are based on genetics and luck</p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowCharacterCreation(false)}
+                    className="flex-1 py-2 border-simple hover:bg-term-white hover:text-term-black transition-colors"
+                  >
+                    BACK
+                  </button>
+                  <button
+                    onClick={createNewGame}
+                    className="flex-1 py-2 border-simple hover:bg-term-white hover:text-term-black transition-colors font-bold"
+                  >
+                    BEGIN LIFE
+                  </button>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

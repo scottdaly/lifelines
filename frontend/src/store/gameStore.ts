@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { GameState, PlayerChoice, TurnResponse } from '../types';
+import { useAuthStore } from './authStore';
 
 interface GameStore {
   // Game State
@@ -14,8 +15,6 @@ interface GameStore {
   // Actions
   initializeGame: (gameState: GameState) => void;
   processTurn: (choice: PlayerChoice) => Promise<void>;
-  loadGame: (saveId: string) => Promise<void>;
-  saveGame: () => Promise<string | null>;
   clearError: () => void;
   addNarrativeLine: (line: string) => void;
   setTyping: (isTyping: boolean) => void;
@@ -58,13 +57,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState) return;
     
+    // Get the current game ID from the URL
+    const pathParts = window.location.pathname.split('/');
+    const gameId = pathParts[pathParts.length - 1];
+    
+    if (!gameId) {
+      set({ error: 'No game ID found' });
+      return;
+    }
+    
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch(`${API_BASE}/api/turn`, {
+      const { tokens } = useAuthStore.getState();
+      const response = await fetch(`${API_BASE}/api/games/${gameId}/turn`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameState, playerChoice: choice })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokens?.accessToken}`
+        },
+        body: JSON.stringify({ playerChoice: choice })
       });
       
       if (!response.ok) {
@@ -113,57 +125,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
         error: error instanceof Error ? error.message : 'An error occurred',
         isLoading: false 
       });
-    }
-  },
-  
-  loadGame: async (saveId) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/load/${saveId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load game');
-      }
-      
-      const { gameState } = await response.json();
-      set({ 
-        gameState,
-        isLoading: false,
-        narrativeLines: ['Game loaded. Your story continues...']
-      });
-      
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to load game',
-        isLoading: false 
-      });
-    }
-  },
-  
-  saveGame: async () => {
-    const { gameState } = get();
-    if (!gameState) return null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameState })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save game');
-      }
-      
-      const { saveId } = await response.json();
-      return saveId;
-      
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to save game' 
-      });
-      return null;
     }
   },
   
