@@ -23,6 +23,16 @@ export function AccountSettingsPage() {
         
         {/* Account Info */}
         <div className="border border-term-gray-dark rounded p-6 space-y-4">
+          {user?.profilePicture && (
+            <div className="flex justify-center mb-4">
+              <img 
+                src={user.profilePicture} 
+                alt={user.username} 
+                className="w-20 h-20 rounded-full border-2 border-term-gray"
+              />
+            </div>
+          )}
+          
           <div>
             <label className="text-xs text-term-gray uppercase tracking-wider">Username</label>
             <p className="text-term-white text-lg">{user?.username}</p>
@@ -31,6 +41,13 @@ export function AccountSettingsPage() {
           <div>
             <label className="text-xs text-term-gray uppercase tracking-wider">Email</label>
             <p className="text-term-white">{user?.email}</p>
+          </div>
+          
+          <div>
+            <label className="text-xs text-term-gray uppercase tracking-wider">Login Method</label>
+            <p className="text-term-white capitalize">
+              {user?.authProvider === 'google' ? 'Google Account' : 'Email & Password'}
+            </p>
           </div>
           
           <div>

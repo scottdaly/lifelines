@@ -3,6 +3,7 @@ import { PlayPage } from './pages/PlayPage';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { AccountSettingsPage } from './pages/AccountSettingsPage';
+import { IconLibraryPage } from './pages/IconLibraryPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 import { useEffect } from 'react';
@@ -34,6 +35,11 @@ function App() {
           <Route path="/play/:gameId" element={
             <ProtectedRoute>
               <PlayPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/icon" element={
+            <ProtectedRoute>
+              <IconLibraryPage />
             </ProtectedRoute>
           } />
           <Route path="*" element={

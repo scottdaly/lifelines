@@ -5,6 +5,8 @@ import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { format } from 'date-fns';
 import { getRandomCharacter } from '../utils/names';
+import { AnimatedLogo } from '../components/AnimatedLogo';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 import type { GameState, NPC, Relationship } from '../types';
 
 const BIRTHPLACES = [
@@ -49,6 +51,7 @@ export function HomePage() {
   const [characterGender, setCharacterGender] = useState<'male' | 'female' | 'neutral'>('neutral');
   const [games, setGames] = useState<SavedGame[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
+  const { confirm, ConfirmModal } = useConfirmModal();
   
   useEffect(() => {
     loadGames();
@@ -85,9 +88,26 @@ export function HomePage() {
   };
   
   const handleDeleteGame = async (gameId: string) => {
-    if (!confirm('Are you sure you want to delete this life?')) {
-      return;
-    }
+    // Find the game to get details for the modal
+    const game = games.find(g => g.id === gameId);
+    if (!game) return;
+
+    const confirmed = await confirm({
+      title: 'DELETE LIFE',
+      message: 'Are you sure you want to delete this life?',
+      confirmText: 'DELETE',
+      cancelText: 'CANCEL',
+      confirmButtonClass: 'border-term-red text-term-red hover:bg-term-red hover:text-black',
+      details: (
+        <div className="space-y-1">
+          <p>Character: <span className="text-term-white">{game.characterName || 'Unknown'}</span></p>
+          <p>Age: <span className="text-term-white">{game.currentAge || 0}</span> • <span className="text-term-white">{stageLabels[game.currentStage || ''] || 'Unknown'}</span></p>
+          <p>Last played: <span className="text-term-white">{format(game.lastPlayed, 'MMM d, yyyy')}</span></p>
+        </div>
+      )
+    });
+
+    if (!confirmed) return;
     
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -324,9 +344,11 @@ export function HomePage() {
               className="max-w-md w-full space-y-8"
             >
               {/* Logo */}
-              <div className="text-center">
-                <h1 className="text-5xl md:text-6xl text-term-white font-logo mb-2">Lifelines</h1>
-                <p className="text-term-gray text-md">A text-based life simulation</p>
+              <div className="text-center space-y-4">
+                <div className="flex justify-center">
+                  <AnimatedLogo />
+                </div>
+                <p className="text-term-gray text-md md:text-2xl">A text-based life simulation</p>
               </div>
               
               {/* New game buttons - vertical stack */}
@@ -506,6 +528,7 @@ export function HomePage() {
           )}
         </AnimatePresence>
       </div>
+      <ConfirmModal />
     </div>
   );
 }

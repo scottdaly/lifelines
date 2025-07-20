@@ -85,7 +85,7 @@ export function PlayPage() {
       {/* Main Area */}
       <div className="flex-1 flex flex-col p-4 md:p-6">
         <div className="hidden md:flex items-center justify-between mb-4">
-          <h1 className="text-2xl text-term-white font-logo">Lifelines</h1>
+          <button onClick={() => navigate('/')} className="text-2xl text-term-white font-logo">Lifelines</button>
           <div className="text-sm text-term-gray">
             {gameState.character.name} | Age {age} | Year {gameState.currentYear}
             {gameState.currentSubTurn && (

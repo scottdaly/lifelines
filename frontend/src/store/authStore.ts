@@ -5,6 +5,8 @@ interface User {
   id: string;
   email: string;
   username: string;
+  authProvider?: string;
+  profilePicture?: string;
 }
 
 interface AuthTokens {
@@ -19,6 +21,7 @@ interface AuthState {
   
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, username: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshTokens: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -63,6 +66,26 @@ export const useAuthStore = create<AuthState>()(
         if (!response.ok) {
           const error = await response.json();
           throw new Error(error.error || 'Registration failed');
+        }
+        
+        const data = await response.json();
+        set({
+          user: data.user,
+          tokens: data.tokens,
+          isAuthenticated: true
+        });
+      },
+      
+      googleLogin: async (credential: string) => {
+        const response = await fetch(`${API_URL}/api/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential })
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Google login failed');
         }
         
         const data = await response.json();
