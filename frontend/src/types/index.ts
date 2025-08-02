@@ -98,15 +98,17 @@ export interface StageConfig {
 import type { GeneratedBackground } from './procedural';
 import type { MemorySystem } from './memory';
 
-export enum GamePhase {
-  CHARACTER_CREATION = 'character_creation',
-  EARLY_CHILDHOOD = 'early_childhood',  // Ages 0-8
-  CHILDHOOD = 'childhood',               // Ages 9-12
-  ADOLESCENCE = 'adolescence',           // Ages 13-17
-  YOUNG_ADULT = 'young_adult',           // Ages 18-25
-  ADULT = 'adult',                       // Ages 26-64
-  SENIOR = 'senior'                      // Ages 65+
-}
+export const GamePhase = {
+  CHARACTER_CREATION: 'character_creation',
+  EARLY_CHILDHOOD: 'early_childhood',  // Ages 0-8
+  CHILDHOOD: 'childhood',               // Ages 9-12
+  ADOLESCENCE: 'adolescence',           // Ages 13-17
+  YOUNG_ADULT: 'young_adult',           // Ages 18-25
+  ADULT: 'adult',                       // Ages 26-64
+  SENIOR: 'senior'                      // Ages 65+
+} as const;
+
+export type GamePhase = typeof GamePhase[keyof typeof GamePhase];
 
 export interface PhaseData {
   earlyChildhood?: {

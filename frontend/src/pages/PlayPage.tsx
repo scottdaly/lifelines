@@ -13,7 +13,7 @@ import { useAuthStore } from '../store/authStore';
 export function PlayPage() {
   const navigate = useNavigate();
   const { gameId } = useParams<{ gameId: string }>();
-  const { gameState, initializeGame, processTurn, error, clearError } = useGameStore();
+  const { gameState, initializeGame, error, clearError } = useGameStore();
   const { tokens } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);

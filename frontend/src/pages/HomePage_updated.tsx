@@ -50,7 +50,6 @@ export function HomePage() {
   const [characterName, setCharacterName] = useState('');
   const [characterGender, setCharacterGender] = useState<'male' | 'female' | 'neutral'>('neutral');
   const [games, setGames] = useState<SavedGame[]>([]);
-  const [gamesLoading, setGamesLoading] = useState(true);
   const { confirm, ConfirmModal } = useConfirmModal();
   
   useEffect(() => {
@@ -79,7 +78,6 @@ export function HomePage() {
     } catch (err: any) {
       console.error('Failed to load games:', err);
     } finally {
-      setGamesLoading(false);
     }
   };
   

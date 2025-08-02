@@ -105,7 +105,7 @@ export function StatsPanel() {
               <div
                 key={i}
                 className={`h-5 flex-1 ${
-                  i < Math.floor(gameState.narrativePressure * 40) 
+                  i < Math.floor((gameState.narrativePressure ?? 0) * 40) 
                     ? 'bg-term-gray-light' 
                     : 'bg-term-gray-dark'
                 }`}
