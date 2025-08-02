@@ -32,18 +32,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
   
   // Actions
   initializeGame: (gameState) => {
-    const narrativeLines = ['Welcome to the world. Your story begins...'];
+    // If the game state includes narrativeHistory (new complete initial state), use it
+    const narrativeLines = gameState.narrativeHistory ? [...gameState.narrativeHistory] : [];
     
-    // Add procedural background narrative if available
-    if (gameState.proceduralBackground) {
-      const { narrativeContext, birthplace, era } = gameState.proceduralBackground;
-      narrativeLines.push('');
-      narrativeLines.push(`[Born in ${birthplace.name}, ${era.name}]`);
-      narrativeLines.push(narrativeContext.familyStory);
-      narrativeLines.push(narrativeContext.environmentDescription);
-      narrativeLines.push('');
-      narrativeLines.push(`Your traits: ${gameState.character.traits.join(', ')}`);
-      narrativeLines.push('');
+    // Only add legacy narrative if no narrativeHistory exists
+    if (!gameState.narrativeHistory) {
+      const age = gameState.currentYear - parseInt(gameState.character.dob.split('-')[0]);
+      if (age > 0) {
+        narrativeLines.push('Welcome back. Your story continues...');
+      }
+      
+      // Add procedural background narrative if available and we're at age 0
+      if (gameState.proceduralBackground && age === 0) {
+        const { narrativeContext, birthplace, era } = gameState.proceduralBackground;
+        narrativeLines.push(`[Born in ${birthplace.name}, ${era.name}]`);
+        narrativeLines.push(narrativeContext.familyStory);
+        narrativeLines.push(narrativeContext.environmentDescription);
+        narrativeLines.push('');
+        narrativeLines.push(`Your traits: ${gameState.character.traits.join(', ')}`);
+      }
     }
     
     set({ 
@@ -80,7 +87,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       });
       
       if (!response.ok) {
-        throw new Error('Failed to process turn');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to process turn' }));
+        throw new Error(errorData.error || 'Failed to process turn');
       }
       
       const turnResponse: TurnResponse = await response.json();
@@ -104,7 +112,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
         if (turnResponse.transitionInfo.turnType !== 'milestone') {
           transitionLines.push('');
         }
-        transitionLines.push(`[AGE ${turnResponse.transitionInfo.ageChange.newAge}]`);
+        // Show age range for early stages
+        const newAge = turnResponse.transitionInfo.ageChange.newAge;
+        if (newAge >= 0 && newAge <= 8) {
+          transitionLines.push(`[AGE 0-8]`);
+        } else if (newAge >= 9 && newAge <= 12) {
+          transitionLines.push(`[AGE 9-12]`);
+        } else {
+          transitionLines.push(`[AGE ${newAge}]`);
+        }
         transitionLines.push(turnResponse.transitionInfo.ageChange.narrative);
         transitionLines.push('');
       }
@@ -121,10 +137,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
       });
       
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'An error occurred',
-        isLoading: false 
-      });
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      
+      // Add error to narrative for immediate visibility
+      set(state => ({ 
+        error: errorMessage,
+        isLoading: false,
+        narrativeLines: [
+          ...state.narrativeLines,
+          '',
+          `[ERROR] ${errorMessage}`,
+          'Please try again or choose a different action.'
+        ]
+      }));
     }
   },
   

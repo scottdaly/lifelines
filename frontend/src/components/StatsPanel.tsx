@@ -69,8 +69,17 @@ export function StatsPanel() {
                   </AnimatePresence>
                 </div>
               </div>
-              <div className="text-xs font-mono">
-                [{'█'.repeat(Math.floor(value / 10))}{'░'.repeat(10 - Math.floor(value / 10))}]
+              <div className="flex items-center gap-0.5 mt-1 w-full">
+                {Array.from({ length: 40 }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`h-5 flex-1 ${
+                      i < Math.floor(value / 2.5) 
+                        ? 'bg-term-gray-light' 
+                        : 'bg-term-gray-dark'
+                    }`}
+                  />
+                ))}
               </div>
             </div>
           );
@@ -91,8 +100,17 @@ export function StatsPanel() {
                gameState.narrativePressure > 0.4 ? 'MED' : 'LOW'}
             </span>
           </div>
-          <div className="text-xs font-mono">
-            [{'█'.repeat(Math.floor(gameState.narrativePressure * 10))}{'░'.repeat(10 - Math.floor(gameState.narrativePressure * 10))}]
+          <div className="flex items-center gap-0.5 mt-1 w-full">
+            {Array.from({ length: 40 }, (_, i) => (
+              <div
+                key={i}
+                className={`h-5 flex-1 ${
+                  i < Math.floor(gameState.narrativePressure * 40) 
+                    ? 'bg-term-gray-light' 
+                    : 'bg-term-gray-dark'
+                }`}
+              />
+            ))}
           </div>
         </div>
       )}

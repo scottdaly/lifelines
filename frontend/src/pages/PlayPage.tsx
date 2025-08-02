@@ -13,7 +13,7 @@ import { useAuthStore } from '../store/authStore';
 export function PlayPage() {
   const navigate = useNavigate();
   const { gameId } = useParams<{ gameId: string }>();
-  const { gameState, initializeGame } = useGameStore();
+  const { gameState, initializeGame, processTurn, error, clearError } = useGameStore();
   const { tokens } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -56,7 +56,6 @@ export function PlayPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
-  
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -93,6 +92,23 @@ export function PlayPage() {
             )}
           </div>
         </div>
+        
+        {/* Error Banner */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 bg-term-red bg-opacity-10 border border-term-red text-term-red text-sm rounded-sm flex items-center justify-between"
+          >
+            <span>{error}</span>
+            <button
+              onClick={clearError}
+              className="ml-4 text-xs hover:text-term-white transition-colors"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
         
         <div className="flex-1 border-simple mb-4 overflow-hidden">
           <TerminalFeed />

@@ -211,19 +211,9 @@ export function HomePage() {
         throw new Error('Failed to generate background');
       }
       
-      const { background, parents, suggestedStats, initialGameState } = await response.json();
+      const { background, parents, suggestedStats } = await response.json();
       
-      // Use the complete initial game state from backend if available
-      const newGameState: GameState = initialGameState ? {
-        ...initialGameState,
-        character: {
-          ...initialGameState.character,
-          name: characterName.trim() || 'Alex',
-          gender: characterGender,
-          dob: `${birthYear}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
-        }
-      } : {
-        // Fallback to old structure for backward compatibility
+      const newGameState: GameState = {
         seed: Math.random().toString(36).substring(2),
         currentYear: birthYear,
         stageLocalIndex: 0,
@@ -401,7 +391,7 @@ export function HomePage() {
                     {games.map((game) => (
                       <div
                         key={game.id}
-                        className="py-6 mx-2 border-b border-term-gray-dark transition-colors"
+                        className="py-4 mx-2 border-b border-term-gray-dark transition-colors"
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>

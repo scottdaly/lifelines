@@ -1,0 +1,49 @@
+<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    :root {
+      --light-fill: #555555;
+      --dark-fill: #D9D9D9;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .light { fill: var(--dark-fill); }
+      .dark { fill: var(--light-fill); }
+    }
+
+    @media (prefers-color-scheme: light) {
+      .light { fill: var(--light-fill); }
+      .dark { fill: var(--dark-fill); }
+    }
+  </style>
+
+  <circle cx="16" cy="10" r="5" class="light"/>
+  <circle cx="16" cy="22" r="5" class="light"/>
+  <circle cx="16" cy="34" r="5" class="light"/>
+  <circle cx="16" cy="46" r="5" class="light"/>
+  <circle cx="16" cy="58" r="5" class="light"/>
+  <circle cx="16" cy="70" r="5" class="light"/>
+  <circle cx="40" cy="70" r="5" class="light"/>
+  <circle cx="28" cy="10" r="5" class="light"/>
+  <circle cx="40" cy="10" r="5" class="dark"/>
+  <circle cx="40" cy="58" r="5" class="light"/>
+  <circle cx="52" cy="10" r="5" class="dark"/>
+  <circle cx="52" cy="58" r="5" class="light"/>
+  <circle cx="28" cy="22" r="5" class="light"/>
+  <circle cx="28" cy="34" r="5" class="light"/>
+  <circle cx="28" cy="46" r="5" class="light"/>
+  <circle cx="28" cy="58" r="5" class="light"/>
+  <circle cx="28" cy="70" r="5" class="light"/>
+  <circle cx="52" cy="70" r="5" class="light"/>
+  <circle cx="64" cy="70" r="5" class="light"/>
+  <circle cx="64" cy="58" r="5" class="light"/>
+  <circle cx="64" cy="46" r="5" class="dark"/>
+  <circle cx="64" cy="34" r="5" class="dark"/>
+  <circle cx="64" cy="22" r="5" class="dark"/>
+  <circle cx="64" cy="10" r="5" class="dark"/>
+  <circle cx="52" cy="22" r="5" class="dark"/>
+  <circle cx="40" cy="34" r="5" class="dark"/>
+  <circle cx="40" cy="46" r="5" class="dark"/>
+  <circle cx="52" cy="46" r="5" class="dark"/>
+  <circle cx="52" cy="34" r="5" class="dark"/>
+  <circle cx="40" cy="22" r="5" class="dark"/>
+</svg>

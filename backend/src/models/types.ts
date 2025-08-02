@@ -84,6 +84,12 @@ export interface TimeBlockAllocation {
   // Total must equal 10
 }
 
+export interface TimeBlockEffect {
+  statModifiers: Partial<Stats>;
+  traitProbabilities: { trait: string; probability: number }[];
+  narrativeThemes: string[];
+}
+
 export interface StageConfig {
   name: LifeStage;
   turnSpan: number;
@@ -95,36 +101,84 @@ export interface StageConfig {
   dynamicSubTurnTriggers?: string[]; // Event tags that can trigger sub-turns
 }
 
-import type { GeneratedBackground } from './procedural';
-import type { MemorySystem } from './memory';
+export const STAGES: StageConfig[] = [
+  {
+    name: "infancy",
+    turnSpan: 3,
+    turnSpanVariance: 0,
+    promptTags: ["baby", "toddler", "early development", "first words", "first steps", "parent perspective"],
+    eventDensity: 'normal',
+    milestoneAges: [1, 3],
+    dynamicSubTurnTriggers: ["first_words", "first_steps", "health_scare", "family_change"]
+  },
+  {
+    name: "earlyChild",
+    turnSpan: 2,
+    turnSpanVariance: 0,
+    promptTags: ["preschool", "early childhood", "learning", "play", "family life", "emerging personality"],
+    eventDensity: 'normal',
+    milestoneAges: [5],
+    dynamicSubTurnTriggers: ["preschool_start", "sibling_birth", "family_move", "early_talent"]
+  },
+  {
+    name: "middleChild",
+    turnSpan: 3,
+    turnSpanVariance: 0,
+    promptTags: ["elementary school", "friendships", "hobbies", "family dynamics", "growing independence"],
+    eventDensity: 'normal',
+    milestoneAges: [8],
+    dynamicSubTurnTriggers: ["first_day_school", "best_friend", "family_crisis", "formative_moment"]
+  },
+  {
+    name: "tween",
+    turnSpan: 4,
+    turnSpanVariance: 0,
+    promptTags: ["pre-teen", "identity formation", "school life", "growing independence", "peer relationships"],
+    eventDensity: 'normal',
+    milestoneAges: [12],
+    dynamicSubTurnTriggers: ["first_crush", "major_conflict", "identity_moment", "school_transition", "friendship_drama"]
+  },
+  {
+    name: "highSchool",
+    turnSpan: 1,
+    subTurns: ["Fall", "Spring", "Summer"],
+    promptTags: ["academics", "romance", "future planning", "social life"],
+    eventDensity: 'dense',
+    milestoneAges: [16, 18],
+    dynamicSubTurnTriggers: ["relationship_start", "college_prep", "major_decision"]
+  },
+  {
+    name: "youngAdult",
+    turnSpan: 2,
+    turnSpanVariance: 1,
+    promptTags: ["career", "independence", "relationships", "education"],
+    eventDensity: 'normal',
+    milestoneAges: [21, 25],
+    dynamicSubTurnTriggers: ["graduation", "first_job", "engagement", "career_change"]
+  },
+  {
+    name: "adult",
+    turnSpan: 3,
+    turnSpanVariance: 2,
+    promptTags: ["career", "family", "stability", "achievements"],
+    eventDensity: 'normal',
+    milestoneAges: [30, 40, 50],
+    dynamicSubTurnTriggers: ["marriage", "childbirth", "divorce", "career_milestone", "loss"]
+  },
+  {
+    name: "senior",
+    turnSpan: 2,
+    turnSpanVariance: 1,
+    promptTags: ["legacy", "reflection", "health", "wisdom"],
+    eventDensity: 'normal',
+    milestoneAges: [65, 70, 80],
+    dynamicSubTurnTriggers: ["retirement", "grandchild", "health_crisis", "loss_of_spouse"]
+  }
+];
 
-export enum GamePhase {
-  CHARACTER_CREATION = 'character_creation',
-  EARLY_CHILDHOOD = 'early_childhood',  // Ages 0-8
-  CHILDHOOD = 'childhood',               // Ages 9-12
-  ADOLESCENCE = 'adolescence',           // Ages 13-17
-  YOUNG_ADULT = 'young_adult',           // Ages 18-25
-  ADULT = 'adult',                       // Ages 26-64
-  SENIOR = 'senior'                      // Ages 65+
-}
-
-export interface PhaseData {
-  earlyChildhood?: {
-    hobbyChoice?: string;
-    hobbyLabel?: string;
-    developmentFocus?: TimeBlockAllocation;
-    initialNarrativeShown?: boolean;
-  };
-  childhood?: {
-    schoolType?: string;
-    primaryInterest?: string;
-  };
-  adolescence?: {
-    highSchoolPath?: string;
-    firstJob?: string;
-  };
-  // Add more phase-specific data as needed
-}
+import type { GeneratedBackground } from './procedural.js';
+import type { MemorySystem } from './memory.js';
+import type { GamePhase, PhaseData } from './gamePhases.js';
 
 export type GameState = {
   seed: string;
@@ -171,11 +225,6 @@ export interface TurnResponse {
     };
     turnType?: 'normal' | 'milestone' | 'sub-turn' | 'time-skip';
     timeSpan?: string; // e.g., "3 years", "Fall semester"
-    yearsProgressed?: number;
-    phaseTransition?: {
-      from: GamePhase;
-      to: GamePhase;
-    };
   };
   newGameState: GameState;
 }
