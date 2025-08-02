@@ -21,7 +21,18 @@ startCleanupSchedule();
 const app = new Hono();
 
 app.use('*', logger());
-app.use('*', cors());
+app.use('*', cors({
+  origin: [
+    'https://lifelines.rsdaly.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Length', 'X-Request-Id'],
+  maxAge: 86400,
+}));
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });

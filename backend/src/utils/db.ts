@@ -86,20 +86,25 @@ export function initDatabase() {
     );
   `);
   
-  // Drop old game_states table if it exists (to update schema)
-  const tableInfo = sqlite.prepare("PRAGMA table_info(game_states)").all();
-  const hasUserIdColumn = tableInfo.some((col: any) => col.name === 'user_id');
-  const hasCharacterNameColumn = tableInfo.some((col: any) => col.name === 'character_name');
+  // Check if game_states table exists first
+  const gameStatesExists = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='game_states'").get();
   
-  if (!hasUserIdColumn || !hasCharacterNameColumn) {
-    // Back up existing data
-    sqlite.exec(`
-      CREATE TABLE IF NOT EXISTS game_states_backup AS 
-      SELECT * FROM game_states;
-    `);
+  if (gameStatesExists) {
+    // Drop old game_states table if it exists (to update schema)
+    const tableInfo = sqlite.prepare("PRAGMA table_info(game_states)").all();
+    const hasUserIdColumn = tableInfo.some((col: any) => col.name === 'user_id');
+    const hasCharacterNameColumn = tableInfo.some((col: any) => col.name === 'character_name');
     
-    // Drop old table
-    sqlite.exec(`DROP TABLE IF EXISTS game_states;`);
+    if (!hasUserIdColumn || !hasCharacterNameColumn) {
+      // Back up existing data
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS game_states_backup AS 
+        SELECT * FROM game_states;
+      `);
+      
+      // Drop old table
+      sqlite.exec(`DROP TABLE IF EXISTS game_states;`);
+    }
   }
   
   // Create new game_states table with updated schema
